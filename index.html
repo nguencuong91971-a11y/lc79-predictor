@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LC79 AI Predictor PRO MAX – Dual Engine (Cloud Sync)</title>
+<style>
+  :root{
+    --bg1:#05060f; --bg2:#0d1024; --bg3:#151a35;
+    --neon:#00f0ff; --neon2:#ff2e88; --gold:#ffd200;
+    --tai:#ff3b5c; --xiu:#3b82f6; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+    --glass:rgba(255,255,255,.05); --stroke:rgba(255,255,255,.1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(0,240,255,.12), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(255,46,136,.12), transparent 60%),
+      linear-gradient(160deg,var(--bg1),var(--bg2) 40%,var(--bg3));
+    color:#e8ecf5; min-height:100vh; padding:20px 14px; display:flex; justify-content:center;
+  }
+  .wrap{width:100%;max-width:1400px}
+
+  header{text-align:center;margin-bottom:14px}
+  header h1{
+    font-size:1.9rem;font-weight:900;letter-spacing:1px;
+    background:linear-gradient(90deg,var(--neon),var(--gold),var(--neon2));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 18px rgba(0,240,255,.35));
+  }
+  header p{color:#8b93a7;font-size:.82rem;margin-top:5px}
+  .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);
+    margin-right:6px;box-shadow:0 0 10px var(--ok);animation:p 1.4s infinite}
+  @keyframes p{50%{opacity:.3}}
+
+  /* SYNC BAR */
+  .syncbar{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--glass);border:1px solid var(--stroke);border-radius:14px;padding:10px 14px;margin-bottom:14px;
+    backdrop-filter:blur(10px);font-size:.76rem;color:#9aa3b8;
+  }
+  .syncbar b{color:#e8ecf5}
+  .syncbar .grp{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .syncbar .ind{display:flex;align-items:center;gap:5px}
+  .syncbar .ind .d{width:7px;height:7px;border-radius:50%}
+  .syncbar .ind .d.on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  .syncbar .ind .d.off{background:var(--bad);box-shadow:0 0 8px var(--bad)}
+  .syncbar .ind .d.wait{background:var(--warn);box-shadow:0 0 8px var(--warn);animation:p 1.2s infinite}
+
+  /* CONFIG PANEL */
+  .config{
+    background:var(--glass);border:1px solid var(--stroke);border-radius:14px;padding:12px 14px;margin-bottom:14px;
+    backdrop-filter:blur(10px);display:none;
+  }
+  .config.show{display:block}
+  .config h3{font-size:.82rem;color:var(--gold);margin-bottom:8px}
+  .config .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .config input, .config select{
+    flex:1;min-width:200px;padding:8px 10px;border-radius:8px;border:1px solid var(--stroke);
+    background:rgba(0,0,0,.3);color:#e8ecf5;font-size:.78rem;font-family:inherit;
+  }
+  .config input:focus, .config select:focus{outline:none;border-color:var(--neon)}
+  .config .hint{font-size:.7rem;color:#8b93a7;line-height:1.4;margin-top:4px}
+  .config .hint a{color:var(--neon);text-decoration:none}
+  .config .btns{display:flex;gap:8px;margin-top:8px}
+  .config .btns button{
+    flex:1;padding:9px;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:.78rem;
+  }
+  .config .btns .primary{background:linear-gradient(90deg,var(--neon),var(--gold));color:#05060f}
+  .config .btns .secondary{background:rgba(255,255,255,.08);color:#e8ecf5;border:1px solid var(--stroke)}
+
+  /* ENGINES */
+  .engines{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:1000px){.engines{grid-template-columns:1fr}}
+  .engine{
+    background:var(--glass);border:1px solid var(--stroke);border-radius:18px;
+    padding:16px;backdrop-filter:blur(14px);position:relative;overflow:hidden;
+    box-shadow:0 8px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .engine::before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(120deg,rgba(0,240,255,.06),transparent 40%,rgba(255,46,136,.06));}
+  .engine.tx{border-top:3px solid var(--tai)}
+  .engine.md5{border-top:3px solid var(--neon)}
+  .engine h2{font-size:1rem;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .engine h2 .tag{font-size:.62rem;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.08);color:#aaa;font-weight:500}
+
+  .dice-row{display:flex;gap:10px;justify-content:center;margin:8px 0}
+  .die{
+    width:52px;height:52px;background:linear-gradient(145deg,#fff,#d9dee8);
+    color:#0a0e1a;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:1.5rem;font-weight:900;box-shadow:0 6px 16px rgba(0,0,0,.5),inset 0 -3px 0 rgba(0,0,0,.12);
+    animation:pop .45s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes pop{from{transform:scale(.4) rotate(-15deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+
+  .meta{font-size:.78rem;color:#9aa3b8;margin:5px 0;text-align:center}
+  .meta b{color:#e8ecf5}
+  .res-badge{display:inline-block;padding:4px 14px;border-radius:30px;font-weight:800;font-size:.8rem}
+  .res-tai{background:linear-gradient(90deg,#ff3b5c,#ff7a5c);color:#fff;box-shadow:0 0 18px rgba(255,59,92,.5)}
+  .res-xiu{background:linear-gradient(90deg,#3b82f6,#00f0ff);color:#fff;box-shadow:0 0 18px rgba(59,130,246,.5)}
+  .res-hoa{background:#555;color:#fff}
+
+  .engine-verdict{
+    margin-top:12px;padding:12px;border-radius:12px;background:rgba(0,0,0,.3);
+    border:1px solid var(--stroke);text-align:center;
+  }
+  .engine-verdict .lbl{font-size:.68rem;letter-spacing:2px;color:#8b93a7;text-transform:uppercase}
+  .engine-verdict .pick{font-size:1.7rem;font-weight:900;letter-spacing:3px;margin:4px 0}
+  .engine-verdict .pick.tai{background:linear-gradient(90deg,#ff3b5c,#ff7a5c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .engine-verdict .pick.xiu{background:linear-gradient(90deg,#3b82f6,#00f0ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .engine-verdict .pick.neutral{color:#aaa}
+  .engine-verdict .meta2{font-size:.72rem;color:#9aa3b8}
+
+  .accuracy{margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .acc-item{background:rgba(0,0,0,.25);border:1px solid var(--stroke);border-radius:10px;padding:8px;text-align:center}
+  .acc-item .h{font-size:.62rem;letter-spacing:1px;color:#8b93a7;text-transform:uppercase}
+  .acc-item .v{font-size:1.1rem;font-weight:800;margin-top:2px}
+  .acc-item .v.ok{color:var(--ok)}
+  .acc-item .v.bad{color:var(--bad)}
+  .acc-item .v.warn{color:var(--warn)}
+  .acc-item .sub{font-size:.6rem;color:#8b93a7;margin-top:1px}
+
+  .algo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:12px}
+  .algo{
+    background:rgba(255,255,255,.03);border:1px solid var(--stroke);border-radius:10px;padding:9px;
+    transition:.2s;position:relative;overflow:hidden;
+  }
+  .algo:hover{transform:translateY(-2px);border-color:rgba(0,240,255,.35);box-shadow:0 6px 18px rgba(0,240,255,.1)}
+  .algo .name{font-size:.72rem;font-weight:700;color:#e8ecf5;margin-bottom:3px}
+  .algo .desc{font-size:.62rem;color:#8b93a7;line-height:1.3;min-height:26px}
+  .algo .verdict{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:.68rem}
+  .algo .verdict .pick{font-weight:800;padding:2px 8px;border-radius:10px}
+  .pick.tai{background:rgba(255,59,92,.18);color:#ff7a8f;border:1px solid rgba(255,59,92,.5)}
+  .pick.xiu{background:rgba(59,130,246,.18);color:#7fb2ff;border:1px solid rgba(59,130,246,.5)}
+  .pick.neutral{background:rgba(255,255,255,.08);color:#aaa;border:1px solid #444}
+  .algo .w{font-size:.6rem;color:#8b93a7}
+
+  .history{margin-top:16px}
+  .section-title{margin:0 0 8px;font-size:.9rem;color:var(--gold);letter-spacing:.5px;display:flex;align-items:center;gap:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{padding:3px 8px;border-radius:7px;font-size:.66rem;font-weight:700}
+  .chip.tai{background:rgba(255,59,92,.15);color:#ff7a8f;border:1px solid rgba(255,59,92,.45)}
+  .chip.xiu{background:rgba(59,130,246,.15);color:#7fb2ff;border:1px solid rgba(59,130,246,.45)}
+  .chip .ok{color:var(--ok)}
+  .chip .bad{color:var(--bad)}
+
+  .controls{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .btn{
+    flex:1;min-width:160px;padding:12px;border:none;border-radius:12px;cursor:pointer;
+    font-weight:800;font-size:.9rem;letter-spacing:.5px;transition:.2s;
+    background:linear-gradient(90deg,var(--neon),var(--gold));color:#05060f;
+    box-shadow:0 0 22px rgba(0,240,255,.35);
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 0 32px rgba(0,240,255,.55)}
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:transparent;border:1px solid var(--stroke);color:#e8ecf5;box-shadow:none;flex:0 0 auto;min-width:110px}
+  .btn.ghost:hover{border-color:var(--neon2);color:var(--neon2)}
+  .btn:disabled{opacity:.5;cursor:wait;transform:none}
+
+  .status{text-align:center;font-size:.75rem;color:#8b93a7;margin-top:12px}
+  .status.err{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⚡ LC79 AI PREDICTOR PRO MAX</h1>
+    <p><span class="pulse"></span>Dual Engine • Cloud Sync (GitHub Gist) • Lưu vĩnh viễn</p>
+  </header>
+
+  <!-- SYNC BAR -->
+  <div class="syncbar">
+    <div class="grp">
+      <div class="ind"><span class="d wait" id="indLocal"></span>Local</div>
+      <div class="ind"><span class="d off" id="indCloud"></span>Cloud (Gist)</div>
+      <div class="ind"><span class="d on" id="indAuto"></span>Auto 15s</div>
+    </div>
+    <div class="grp">
+      <span>Tổng phiên: <b id="statTotal">0</b></span>
+      <span id="statLast">Lần cuối: --</span>
+      <button class="btn ghost" style="padding:5px 10px;font-size:.72rem;min-width:auto" id="toggleConfigBtn">⚙ Cấu hình Cloud</button>
+    </div>
+  </div>
+
+  <!-- CONFIG PANEL -->
+  <div class="config" id="configPanel">
+    <h3>⚙ Cấu hình GitHub Gist (lưu vĩnh viễn, đồng bộ mọi máy)</h3>
+    <div class="row">
+      <input type="password" id="cfgToken" placeholder="GitHub Personal Access Token (chỉ quyền gist)">
+      <input type="text" id="cfgGistId" placeholder="Gist ID (để trống nếu tạo mới)">
+    </div>
+    <div class="hint">
+      1. Vào <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a> → tạo Fine-grained token, chỉ cấp quyền <b>Gists: Read and write</b>.<br>
+      2. Dán token vào ô trên. Nếu chưa có Gist ID, để trống rồi bấm "Lưu & Kết nối" → hệ thống tự tạo Gist mới và hiển thị ID.<br>
+      3. Lần sau mở trên máy khác, chỉ cần dán token + Gist ID → toàn bộ lịch sử được tải về.
+    </div>
+    <div class="btns">
+      <button class="primary" id="cfgSave">💾 Lưu &amp; Kết nối</button>
+      <button class="secondary" id="cfgTest">🔍 Kiểm tra kết nối</button>
+      <button class="secondary" id="cfgClear">🗑 Xóa cấu hình</button>
+    </div>
+  </div>
+
+  <!-- ENGINES -->
+  <div class="engines">
+    <div class="engine tx" id="engineTX">
+      <h2>🎯 ENGINE TÀI XỈU <span class="tag">Bảng TX</span></h2>
+      <div class="status">Đang tải…</div>
+    </div>
+    <div class="engine md5" id="engineMD5">
+      <h2>🔐 ENGINE MD5 <span class="tag">Bảng MD5</span></h2>
+      <div class="status">Đang tải…</div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="history">
+    <div class="section-title">🕘 Lịch sử gần đây (kèm đúng/sai của dự đoán)</div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="refreshBtn">🔄 Làm mới ngay</button>
+    <button class="btn ghost" id="toggleAutoBtn">⏸ Tạm dừng Auto</button>
+    <button class="btn ghost" id="exportBtn">💾 Tải JSON</button>
+    <button class="btn ghost" id="importBtn">📂 Nhập JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none">
+  </div>
+  <div class="status" id="globalStatus"></div>
+</div>
+
+<script>
+/* ================== CONFIG ================== */
+const API_TX  = "https://apitaixiu-6jjn.onrender.com/lc79/tx";
+const API_MD5 = "https://apitaixiu-6jjn.onrender.com/lc79/md5";
+const LS_HIST = "lc79_history_v5";
+const LS_PRED = "lc79_predictions_v5";
+const LS_CFG  = "lc79_cloud_cfg_v5";
+const MAX_HIST = 100000;   // gần như không giới hạn
+const AUTO_INTERVAL = 15000;
+
+/* ================== STATE ================== */
+let hist  = loadJSON(LS_HIST, []);
+let preds = loadJSON(LS_PRED, {tx:[], md5:[]});
+let cfg   = loadJSON(LS_CFG,  {token:"", gistId:""});
+let autoTimer = null, autoOn = true;
+let cloudReady = false, cloudSaving = false, cloudDirty = false;
+
+function loadJSON(k, def){ try{return JSON.parse(localStorage.getItem(k))||def}catch{return def} }
+function saveJSON(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
+function saveLocal(){ saveJSON(LS_HIST, hist); saveJSON(LS_PRED, preds); saveJSON(LS_CFG, cfg); }
+
+function pushHist(item){
+  if(!item || item.Phien==null) return false;
+  if(hist.some(x=>x.Phien===item.Phien && x.Name===item.Name)) return false;
+  hist.push(item);
+  hist.sort((a,b)=>a.Phien-b.Phien);
+  // KHÔNG cắt bớt nữa → lưu mãi mãi
+  return true;
+}
+function dataFor(name){ return hist.filter(x=>x.Name===name).sort((a,b)=>a.Phien-b.Phien); }
+function merged(){ return [...hist].sort((a,b)=>a.Phien-b.Phien); }
+
+/* ================== CLOUD (GitHub Gist) ================== */
+async function gistFetch(){
+  if(!cfg.token) throw new Error("Chưa có token");
+  if(!cfg.gistId) throw new Error("Chưa có Gist ID");
+  const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+    headers: { Authorization: `Bearer ${cfg.token}`, Accept: "application/vnd.github+json" }
+  });
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const j = await r.json();
+  const f = j.files && j.files["lc79-data.json"];
+  if(!f) return {hist:[], preds:{tx:[],md5:[]}};
+  // Nếu file quá lớn, GitHub trả về truncated + raw_url
+  let content = f.content;
+  if(f.truncated && f.raw_url){
+    const rr = await fetch(f.raw_url);
+    content = await rr.text();
+  }
+  try { return JSON.parse(content); } catch { return {hist:[], preds:{tx:[],md5:[]}}; }
+}
+
+async function gistCreate(){
+  if(!cfg.token) throw new Error("Chưa có token");
+  const body = {
+    description: "LC79 Predictor – Lịch sử & dự đoán",
+    public: false,
+    files: { "lc79-data.json": { content: JSON.stringify({hist:[], preds:{tx:[],md5:[]}}, null, 0) } }
+  };
+  const r = await fetch("https://api.github.com/gists", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${cfg.token}`, Accept: "application/vnd.github+json", "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const j = await r.json();
+  cfg.gistId = j.id;
+  saveLocal();
+  return j.id;
+}
+
+async function gistSave(){
+  if(!cfg.token) throw new Error("Chưa có token");
+  if(!cfg.gistId) await gistCreate();
+  const content = JSON.stringify({ hist, preds });
+  const r = await fetch(`https://api.github.com/gists/${cfg.gistId}`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${cfg.token}`, Accept: "application/vnd.github+json", "Content-Type":"application/json" },
+    body: JSON.stringify({ files: { "lc79-data.json": { content } } })
+  });
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return true;
+}
+
+function setCloudIndicator(state, title){
+  const el = document.getElementById("indCloud");
+  el.className = "d " + state;
+  el.parentElement.title = title || "";
+}
+
+async function cloudSyncDown(){
+  // Tải dữ liệu từ Gist về, merge với local (không mất dữ liệu local)
+  if(!cfg.token || !cfg.gistId){ setCloudIndicator("off","Chưa cấu hình"); return; }
+  setCloudIndicator("wait","Đang tải…");
+  try{
+    const remote = await gistFetch();
+    // merge hist
+    const map = new Map();
+    [...(remote.hist||[]), ...hist].forEach(x=>map.set(x.Phien+"|"+x.Name, x));
+    hist = [...map.values()].sort((a,b)=>a.Phien-b.Phien);
+    // merge preds
+    const pm = {tx:new Map(), md5:new Map()};
+    ["tx","md5"].forEach(k=>{
+      [...((remote.preds&&remote.preds[k])||[]), ...((preds[k])||[])].forEach(p=>{
+        pm[k].set(p.Phien, p);
+      });
+    });
+    preds = { tx:[...pm.tx.values()].sort((a,b)=>a.Phien-b.Phien),
+              md5:[...pm.md5.values()].sort((a,b)=>a.Phien-b.Phien) };
+    saveLocal();
+    cloudReady = true;
+    setCloudIndicator("on","Đã kết nối • " + new Date().toLocaleTimeString("vi-VN"));
+  }catch(e){
+    setCloudIndicator("off","Lỗi: " + e.message);
+  }
+}
+
+async function cloudSyncUp(){
+  if(!cfg.token || !cfg.gistId) return;
+  if(cloudSaving){ cloudDirty = true; return; }
+  cloudSaving = true;
+  setCloudIndicator("wait","Đang lưu…");
+  try{
+    await gistSave();
+    cloudReady = true;
+    cloudDirty = false;
+    setCloudIndicator("on","Đã lưu • " + new Date().toLocaleTimeString("vi-VN"));
+  }catch(e){
+    setCloudIndicator("off","Lỗi lưu: " + e.message);
+  }finally{
+    cloudSaving = false;
+    if(cloudDirty){ cloudDirty = false; cloudSyncUp(); }
+  }
+}
+
+/* ================== FETCH ================== */
+async function fetchJSON(url){
+  const r = await fetch(url,{cache:"no-store"});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+/* ================== DICE ================== */
+function diceHTML(item){
+  if(!item) return "";
+  const cls = item.Ket_qua==="Tài"?"res-tai":item.Ket_qua==="Xỉu"?"res-xiu":"res-hoa";
+  return `
+    <div class="dice-row">
+      ${[item.Xuc_xac_1,item.Xuc_xac_2,item.Xuc_xac_3].map(d=>`<div class="die">${d}</div>`).join("")}
+    </div>
+    <div class="meta">Phiên <b>${item.Phien}</b> • Tổng <b>${item.Tong}</b></div>
+    <div style="text-align:center"><span class="res-badge ${cls}">${item.Ket_qua}</span></div>
+  `;
+}
+
+/* ================== THUẬT TOÁN ================== */
+function neutral(name){ return {name, desc:"Chưa đủ dữ liệu.", pick:"HÒA", score:0, weight:0.2}; }
+
+function algoTrendShort(d){
+  const s=d.slice(-5); if(!s.length) return neutral("Xu hướng ngắn");
+  let v=0; s.forEach((r,i)=>{ v += (r.Ket_qua==="Tài"?1:-1)*Math.pow(0.8,i); });
+  return {name:"📈 Xu hướng ngắn", desc:"5 phiên, trọng số giảm dần.", pick: v>=0?"TÀI":"XỈU", score: v/s.length, weight:1.0};
+}
+function algoTrendLong(d){
+  const s=d.slice(-12); if(!s.length) return neutral("Xu hướng dài");
+  let v=0; s.forEach((r,i)=>{ v += (r.Ket_qua==="Tài"?1:-1)*Math.pow(0.9,i); });
+  return {name:"📊 Xu hướng dài", desc:"12 phiên, lọc nhiễu.", pick: v>=0?"TÀI":"XỈU", score: v/s.length, weight:0.9};
+}
+function algoBiet(d, win=12, maxW=1.4){
+  const s=d.slice(-win); if(!s.length) return neutral("Bệt");
+  let streak=1; const last=s[s.length-1].Ket_qua;
+  for(let i=s.length-2;i>=0;i--){ if(s[i].Ket_qua===last) streak++; else break; }
+  return {
+    name:`🔥 Bệt (streak=${streak})`,
+    desc:"Đánh theo bệt, trọng số tăng theo độ dài.",
+    pick: last==="Tài"?"TÀI":"XỈU", score: last==="Tài"?1:-1, weight: Math.min(0.4+streak*0.15,maxW)
+  };
+}
+function algoBeCau(d){
+  const s=d.slice(-12); if(!s.length) return neutral("Bẻ cầu");
+  let streak=1; const last=s[s.length-1].Ket_qua;
+  for(let i=s.length-2;i>=0;i--){ if(s[i].Ket_qua===last) streak++; else break; }
+  if(streak>=4) return {
+    name:`🔀 Bẻ cầu (bệt ${streak})`,
+    desc:"Bệt ≥ 4 → xác suất đảo tăng, chọn ngược.",
+    pick: last==="Tài"?"XỈU":"TÀI", score: last==="Tài"?-1:1, weight:1.1
+  };
+  return {name:"🔀 Bẻ cầu", desc:"Chưa đủ bệt ≥ 4.", pick:"HÒA", score:0, weight:0.3};
+}
+function algoCau1_1(d){
+  const s=d.slice(-8); if(s.length<6) return neutral("Cầu 1-1");
+  let m=0,t=0; for(let i=1;i<s.length;i++){ t++; if(s[i].Ket_qua!==s[i-1].Ket_qua) m++; }
+  const r=m/t; const last=s[s.length-1].Ket_qua;
+  if(r>=0.7) return {
+    name:"🔁 Cầu 1-1", desc:`Xen kẽ T-X (đảo ${Math.round(r*100)}%).`,
+    pick: last==="Tài"?"XỈU":"TÀI", score: last==="Tài"?-1:1, weight:1.0
+  };
+  return {name:"🔁 Cầu 1-1", desc:`Đảo ${Math.round(r*100)}% – chưa đủ.`, pick:"HÒA", score:0, weight:0.35};
+}
+function algoCau2_2(d){
+  const s=d.slice(-10); if(s.length<8) return neutral("Cầu 2-2");
+  let ok=0,t=0; for(let i=2;i<s.length;i+=2){ if(i+1<s.length){ t++; if(s[i].Ket_qua===s[i+1].Ket_qua) ok++; } }
+  const r=t?ok/t:0;
+  if(r>=0.75){
+    const last2=s.slice(-2); const pick=last2[0].Ket_qua==="Tài"?"XỈU":"TÀI";
+    return {name:"🔂 Cầu 2-2", desc:`Nhóm 2 giống (${Math.round(r*100)}%).`, pick, score: pick==="TÀI"?1:-1, weight:0.9};
+  }
+  return {name:"🔂 Cầu 2-2", desc:`Khớp ${Math.round(r*100)}% – chưa đủ.`, pick:"HÒA", score:0, weight:0.3};
+}
+function algoCau3_1(d){
+  const s=d.slice(-12); if(s.length<8) return neutral("Cầu 3-1");
+  let h=0,c=0;
+  for(let i=3;i<s.length;i++){ c++;
+    const same3=s[i-1].Ket_qua===s[i-2].Ket_qua && s[i-2].Ket_qua===s[i-3].Ket_qua;
+    const diff=s[i].Ket_qua!==s[i-1].Ket_qua;
+    if(same3 && diff) h++;
+  }
+  const r=c?h/c:0;
+  if(r>=0.4){
+    const last=s[s.length-1].Ket_qua;
+    let streak=1; for(let i=s.length-2;i>=0;i--){ if(s[i].Ket_qua===last) streak++; else break; }
+    const pick = streak>=3?(last==="Tài"?"XỈU":"TÀI"):(last==="Tài"?"TÀI":"XỈU");
+    return {name:"🎯 Cầu 3-1", desc:`Mẫu 3+1 (${Math.round(r*100)}%).`, pick, score: pick==="TÀI"?1:-1, weight:0.85};
+  }
+  return {name:"🎯 Cầu 3-1", desc:"Chưa đủ mẫu 3-1.", pick:"HÒA", score:0, weight:0.25};
+}
+function algoMarkov(d){
+  const s=d.slice(-20); if(s.length<6) return neutral("Markov");
+  let TT=0,TX=0,XT=0,XX=0;
+  for(let i=1;i<s.length;i++){ const a=s[i-1].Ket_qua,b=s[i].Ket_qua;
+    if(a==="Tài"&&b==="Tài")TT++; else if(a==="Tài"&&b==="Xỉu")TX++;
+    else if(a==="Xỉu"&&b==="Tài")XT++; else if(a==="Xỉu"&&b==="Xỉu")XX++;
+  }
+  const last=s[s.length-1].Ket_qua;
+  const pTai = last==="Tài" ? TT/(TT+TX||1) : XT/(XT+XX||1);
+  return {name:"🔗 Markov bậc 1", desc:"Xác suất chuyển trạng thái T→T / T→X…", pick: pTai>=0.5?"TÀI":"XỈU", score:(pTai-0.5)*2, weight:1.0};
+}
+function algoFrequency(d){
+  const s=d.slice(-20); if(!s.length) return neutral("Tần suất");
+  const tai=s.filter(r=>r.Ket_qua==="Tài").length, r=tai/s.length;
+  const pick = r>0.6?"XỈU":r<0.4?"TÀI":(r>=0.5?"TÀI":"XỈU");
+  return {name:"📉 Tần suất / Mean-reversion", desc:`Tài ${Math.round(r*100)}% (20 phiên).`, pick, score: pick==="TÀI"?Math.abs(0.5-r)*2:Math.abs(0.5-r)*2, weight:0.7};
+}
+function algoDiceSum(d){
+  const s=d.slice(-10); if(!s.length) return neutral("Tổng TB");
+  const avg=s.reduce((a,r)=>a+r.Tong,0)/s.length;
+  const pick=avg>=10.5?"TÀI":"XỈU";
+  return {name:"🎲 Tổng điểm TB", desc:`TB 10 phiên: ${avg.toFixed(2)}.`, pick, score:(avg-10.5)/3.5, weight:0.6};
+}
+function algoParityMD5(d){
+  const s=d.slice(-15); if(!s.length) return neutral("Chẵn lẻ");
+  const even=s.filter(r=>r.Tong%2===0).length, r=even/s.length;
+  let pick="HÒA", score=0;
+  if(r>0.65){ pick="TÀI"; score=0.3; } else if(r<0.35){ pick="XỈU"; score=-0.3; }
+  return {name:"⚖️ Chẵn/Lẻ tổng", desc:`Tổng chẵn ${Math.round(r*100)}% – đóng góp nhẹ.`, pick, score, weight:0.5};
+}
+function algoDicePatternMD5(d){
+  const s=d.slice(-12); if(!s.length) return neutral("Mẫu xúc xắc");
+  const cnt={}; s.forEach(r=>{ [r.Xuc_xac_1,r.Xuc_xac_2,r.Xuc_xac_3].forEach(v=>cnt[v]=(cnt[v]||0)+1); });
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+  const face=parseInt(top[0]);
+  let pick="HÒA", score=0;
+  if(face>=5){ pick="TÀI"; score=0.5; } else if(face<=2){ pick="XỈU"; score=-0.5; }
+  return {name:"🎲 Mẫu mặt xúc xắc", desc:`Mặt ${face} xuất hiện nhiều nhất (${top[1]} lần).`, pick, score, weight:0.7};
+}
+function algoStreakMD5(d){
+  const s=d.slice(-8); if(!s.length) return neutral("Bệt MD5");
+  let streak=1; const last=s[s.length-1].Ket_qua;
+  for(let i=s.length-2;i>=0;i--){ if(s[i].Ket_qua===last) streak++; else break; }
+  return {
+    name:`🔥 Bệt MD5 (${streak})`,
+    desc:"Cửa sổ 8 phiên, trọng số thấp hơn TX.",
+    pick: last==="Tài"?"TÀI":"XỈU", score: last==="Tài"?1:-1, weight: Math.min(0.3+streak*0.1,1.0)
+  };
+}
+
+function algosTX(d){
+  return [algoTrendShort(d),algoTrendLong(d),algoBiet(d,12,1.4),algoBeCau(d),
+          algoCau1_1(d),algoCau2_2(d),algoMarkov(d),algoFrequency(d),algoDiceSum(d)];
+}
+function algosMD5(d){
+  return [algoTrendShort(d),algoTrendLong(d),algoStreakMD5(d),algoCau1_1(d),
+          algoCau2_2(d),algoCau3_1(d),algoMarkov(d),algoParityMD5(d),
+          algoDicePatternMD5(d),algoFrequency(d)];
+}
+
+function aggregate(algos){
+  let total=0, wsum=0, count=0;
+  algos.forEach(a=>{
+    if(a.pick==="TÀI"){ total += a.score*a.weight; wsum+=a.weight; count++; }
+    else if(a.pick==="XỈU"){ total += a.score*a.weight; wsum+=a.weight; count++; }
+  });
+  let pick="HÒA", conf=50, norm=0;
+  if(wsum>0){
+    norm = total/wsum;
+    pick = norm>=0?"TÀI":"XỈU";
+    conf = Math.round(50 + Math.min(Math.abs(norm),1)*40);
+  }
+  return {pick, conf, norm, count};
+}
+
+/* ================== CHẤM ĐÚNG/SAI ================== */
+function scorePrediction(name, currentPhien){
+  const list = preds[name] || [];
+  const entry = list.find(p=>p.Phien===currentPhien);
+  if(!entry || entry.resolved) return null;
+  const item = hist.find(x=>x.Phien===currentPhien && x.Name===name);
+  if(!item) return null;
+  const actual = item.Ket_qua==="Tài"?"TÀI": item.Ket_qua==="Xỉu"?"XỈU":"HÒA";
+  entry.actual = actual;
+  entry.correct = entry.pick === actual;
+  entry.resolved = true;
+  saveLocal();
+  return {entry, correct: entry.correct};
+}
+
+function accuracyStats(name){
+  const list = (preds[name]||[]).filter(p=>p.resolved);
+  if(!list.length) return {total:0, correct:0, wrong:0, rate:0, streak:0, streakType:null};
+  const correct = list.filter(p=>p.correct).length;
+  const wrong = list.length - correct;
+  const rate = Math.round(correct/list.length*100);
+  let streak=0, streakType=null;
+  for(let i=list.length-1;i>=0;i--){
+    const c = list[i].correct;
+    if(streakType===null){ streakType=c; streak=1; }
+    else if(c===streakType){ streak++; } else break;
+  }
+  return {total:list.length, correct, wrong, rate, streak, streakType};
+}
+
+/* ================== RENDER ENGINE ================== */
+function renderEngine(el, title, tag, item, algos, agg, name){
+  const pickCls = agg.pick==="TÀI"?"tai":agg.pick==="XỈU"?"xiu":"neutral";
+  const algoHTML = algos.map(a=>{
+    const pcls = a.pick==="TÀI"?"tai":a.pick==="XỈU"?"xiu":"neutral";
+    return `<div class="algo">
+      <div class="name">${a.name}</div>
+      <div class="desc">${a.desc}</div>
+      <div class="verdict"><span class="pick ${pcls}">${a.pick}</span><span class="w">w=${a.weight.toFixed(2)}</span></div>
+    </div>`;
+  }).join("");
+
+  let currentResult = null;
+  if(item){ currentResult = scorePrediction(name, item.Phien); }
+  const stats = accuracyStats(name);
+
+  let resultBadge = "";
+  if(currentResult){
+    const c = currentResult.correct;
+    resultBadge = `<div style="margin-top:8px;font-size:.75rem;color:${c?'var(--ok)':'var(--bad)'}">
+      ${c?'✅ Dự đoán ĐÚNG':'❌ Dự đoán SAI'} (phiên ${item.Phien}: dự đoán ${currentResult.entry.pick} → thực tế ${currentResult.entry.actual})
+    </div>`;
+  }
+
+  let streakHTML = "—";
+  if(stats.streak>0){
+    streakHTML = `<span style="color:${stats.streakType?'var(--ok)':'var(--bad)'}">${stats.streakType?'✅':'❌'} ${stats.streak}</span>`;
+  }
+
+  el.innerHTML = `
+    <h2>${title} <span class="tag">${tag}</span></h2>
+    ${item?diceHTML(item):'<div class="status err">Không có dữ liệu</div>'}
+    ${resultBadge}
+    <div class="engine-verdict">
+      <div class="lbl">Engine dự đoán phiên ${item?item.Phien+1:'?'}</div>
+      <div class="pick ${pickCls}">${agg.pick}</div>
+      <div class="meta2">${agg.count}/${algos.length} tín hiệu • norm=${agg.norm.toFixed(2)} • tin cậy ~${agg.conf}%</div>
+    </div>
+    <div class="accuracy">
+      <div class="acc-item"><div class="h">Tổng</div><div class="v">${stats.total}</div><div class="sub">phiên đã chấm</div></div>
+      <div class="acc-item"><div class="h">Đúng</div><div class="v ok">${stats.correct}</div><div class="sub">${stats.total?Math.round(stats.correct/stats.total*100):0}%</div></div>
+      <div class="acc-item"><div class="h">Sai</div><div class="v bad">${stats.wrong}</div><div class="sub">streak: ${streakHTML}</div></div>
+    </div>
+    <div class="algo-grid">${algoHTML}</div>
+  `;
+}
+
+function renderEngineError(el, title, tag, msg){
+  el.innerHTML = `<h2>${title} <span class="tag">${tag}</span></h2><div class="status err">Lỗi: ${msg}</div>`;
+}
+
+/* ================== CHIPS ================== */
+function renderChips(){
+  const arr = merged().slice(-30).reverse();
+  const box = document.getElementById("chips");
+  if(!arr.length){ box.innerHTML='<span style="color:#666;font-size:.8rem">Chưa có dữ liệu</span>'; return; }
+  box.innerHTML = arr.map(r=>{
+    const c = r.Ket_qua==="Tài"?"tai":"xiu";
+    const plist = preds[r.Name]||[];
+    const p = plist.find(x=>x.Phien===r.Phien && x.resolved);
+    let mark = "";
+    if(p) mark = p.correct?' <span class="ok">✅</span>':' <span class="bad">❌</span>';
+    return `<span class="chip ${c}">${r.Phien} • ${r.Ket_qua} (${r.Tong})${mark}</span>`;
+  }).join("");
+}
+
+/* ================== LƯU DỰ ĐOÁN ================== */
+function savePrediction(name, nextPhien, agg){
+  if(!preds[name]) preds[name]=[];
+  const idx = preds[name].findIndex(p=>p.Phien===nextPhien && !p.resolved);
+  const entry = {Phien:nextPhien, pick:agg.pick, norm:agg.norm, conf:agg.conf, ts:Date.now(), resolved:false};
+  if(idx>=0) preds[name][idx]=entry; else preds[name].push(entry);
+  saveLocal();
+}
+
+/* ================== TOP BAR ================== */
+function updateTopBar(){
+  document.getElementById("statTotal").textContent = hist.length;
+  document.getElementById("statLast").textContent = "Lần cuối: " + new Date().toLocaleTimeString("vi-VN");
+}
+
+/* ================== MAIN RUN ================== */
+async function run(){
+  const btn = document.getElementById("refreshBtn");
+  const gs = document.getElementById("globalStatus");
+  btn.disabled = true;
+  gs.textContent = "Đang gọi API…"; gs.className="status";
+
+  const elTX = document.getElementById("engineTX");
+  const elMD5 = document.getElementById("engineMD5");
+
+  const [rTX, rMD5] = await Promise.allSettled([fetchJSON(API_TX), fetchJSON(API_MD5)]);
+  const errs = [];
+
+  let itemTX=null, itemMD5=null;
+  let newData = false;
+  if(rTX.status==="fulfilled"){ itemTX=rTX.value; if(pushHist(itemTX)) newData=true; }
+  else errs.push("TX");
+  if(rMD5.status==="fulfilled"){ itemMD5=rMD5.value; if(pushHist(itemMD5)) newData=true; }
+  else errs.push("MD5");
+
+  saveLocal();
+  if(newData) cloudSyncUp();  // đẩy lên cloud nếu có dữ liệu mới
+
+  const dTX = itemTX? dataFor(itemTX.Name) : [];
+  const dMD5 = itemMD5? dataFor(itemMD5.Name) : [];
+
+  const listTX = algosTX(dTX);
+  const listMD5 = algosMD5(dMD5);
+  const aggTX = aggregate(listTX);
+  const aggMD5 = aggregate(listMD5);
+
+  if(itemTX) savePrediction(itemTX.Name, itemTX.Phien+1, aggTX);
+  if(itemMD5) savePrediction(itemMD5.Name, itemMD5.Phien+1, aggMD5);
+
+  if(itemTX) renderEngine(elTX, "🎯 ENGINE TÀI XỈU", "Bảng TX", itemTX, listTX, aggTX, itemTX.Name);
+  else renderEngineError(elTX, "🎯 ENGINE TÀI XỈU", "Bảng TX", "không tải được");
+
+  if(itemMD5) renderEngine(elMD5, "🔐 ENGINE MD5", "Bảng MD5", itemMD5, listMD5, aggMD5, itemMD5.Name);
+  else renderEngineError(elMD5, "🔐 ENGINE MD5", "Bảng MD5", "không tải được");
+
+  renderChips();
+  updateTopBar();
+
+  gs.textContent = errs.length
+    ? "Một số API lỗi: " + errs.join(", ")
+    : "Cập nhật lúc " + new Date().toLocaleTimeString("vi-VN") + " • Auto: " + (autoOn?"BẬT":"TẮT");
+  gs.className = errs.length ? "status err" : "status";
+  btn.disabled = false;
+}
+
+/* ================== AUTO ================== */
+function startAuto(){
+  if(autoTimer) clearInterval(autoTimer);
+  autoTimer = setInterval(()=>{ if(autoOn) run(); }, AUTO_INTERVAL);
+}
+function toggleAuto(){
+  autoOn = !autoOn;
+  document.getElementById("toggleAutoBtn").textContent = autoOn ? "⏸ Tạm dừng Auto" : "▶ Bật Auto";
+  document.getElementById("indAuto").className = "d " + (autoOn?"on":"off");
+}
+
+/* ================== CONFIG UI ================== */
+function openConfig(){
+  document.getElementById("configPanel").classList.toggle("show");
+  document.getElementById("cfgToken").value = cfg.token || "";
+  document.getElementById("cfgGistId").value = cfg.gistId || "";
+}
+
+async function saveConfig(){
+  cfg.token = document.getElementById("cfgToken").value.trim();
+  cfg.gistId = document.getElementById("cfgGistId").value.trim();
+  saveLocal();
+  if(!cfg.token){ setCloudIndicator("off","Chưa có token"); return; }
+  // Nếu chưa có gistId → tạo mới
+  if(!cfg.gistId){
+    try{ await gistCreate(); document.getElementById("cfgGistId").value = cfg.gistId;
+      document.getElementById("globalStatus").textContent = "Đã tạo Gist mới: " + cfg.gistId;
+    }catch(e){ document.getElementById("globalStatus").textContent = "Lỗi tạo Gist: " + e.message; return; }
+  }
+  await cloudSyncDown();
+  await cloudSyncUp();
+  document.getElementById("globalStatus").textContent = "Đã kết nối Cloud. Gist ID: " + cfg.gistId;
+}
+
+async function testConfig(){
+  cfg.token = document.getElementById("cfgToken").value.trim();
+  cfg.gistId = document.getElementById("cfgGistId").value.trim();
+  saveLocal();
+  try{
+    const r = await gistFetch();
+    document.getElementById("globalStatus").textContent =
+      `OK • Cloud có ${(r.hist||[]).length} phiên, ${((r.preds&&r.preds.tx)||[]).length + ((r.preds&&r.preds.md5)||[]).length} dự đoán`;
+  }catch(e){
+    document.getElementById("globalStatus").textContent = "Lỗi: " + e.message;
+  }
+}
+
+function clearConfig(){
+  if(!confirm("Xóa token & Gist ID khỏi máy này? (Dữ liệu trên cloud vẫn còn)")) return;
+  cfg = {token:"", gistId:""};
+  saveLocal();
+  document.getElementById("cfgToken").value = "";
+  document.getElementById("cfgGistId").value = "";
+  setCloudIndicator("off","Đã xóa cấu hình");
+}
+
+/* ================== EXPORT / IMPORT ================== */
+function exportJSON(){
+  const data = { hist, preds, exportedAt: new Date().toISOString(), version: "v5" };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `lc79-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importJSON(file){
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const data = JSON.parse(e.target.result);
+      if(data.hist && Array.isArray(data.hist)){
+        // merge
+        const map = new Map();
+        [...hist, ...data.hist].forEach(x=>map.set(x.Phien+"|"+x.Name, x));
+        hist = [...map.values()].sort((a,b)=>a.Phien-b.Phien);
+      }
+      if(data.preds){
+        ["tx","md5"].forEach(k=>{
+          if(Array.isArray(data.preds[k])){
+            const m = new Map();
+            [...(preds[k]||[]), ...data.preds[k]].forEach(p=>m.set(p.Phien, p));
+            preds[k] = [...m.values()].sort((a,b)=>a.Phien-b.Phien);
+          }
+        });
+      }
+      saveLocal();
+      cloudSyncUp();
+      renderChips();
+      document.getElementById("globalStatus").textContent = "Đã nhập dữ liệu thành công.";
+    }catch(err){
+      document.getElementById("globalStatus").textContent = "Lỗi nhập: " + err.message;
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ================== EVENTS ================== */
+document.getElementById("refreshBtn").addEventListener("click", run);
+document.getElementById("toggleAutoBtn").addEventListener("click", toggleAuto);
+document.getElementById("toggleConfigBtn").addEventListener("click", openConfig);
+document.getElementById("cfgSave").addEventListener("click", saveConfig);
+document.getElementById("cfgTest").addEventListener("click", testConfig);
+document.getElementById("cfgClear").addEventListener("click", clearConfig);
+document.getElementById("exportBtn").addEventListener("click", exportJSON);
+document.getElementById("importBtn").addEventListener("click", ()=>document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change", e=>{
+  if(e.target.files[0]) importJSON(e.target.files[0]);
+  e.target.value = "";
+});
+
+/* ================== CLOCK ================== */
+setInterval(()=>{
+  const el = document.getElementById("liveClock");
+  if(el) el.textContent = new Date().toLocaleTimeString("vi-VN");
+}, 1000);
+
+/* ================== INIT ================== */
+(async function init(){
+  updateTopBar();
+  renderChips();
+  // Nếu đã có cấu hình cloud → tải về trước
+  if(cfg.token && cfg.gistId){
+    await cloudSyncDown();
+    renderChips();
+    updateTopBar();
+  }
+  await run();
+  startAuto();
+})();
+</script>
+</body>
+    </html>
